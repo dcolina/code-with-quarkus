@@ -115,11 +115,11 @@ jobs:
 
       - name: Create Release
         env:
-          # JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ steps.set-release-version.outputs.release_version }}
           JRELEASER_DRY_RUN: 'true'      
         run: |
-          ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true -Djreleaser.github.token=${{ secrets.GITHUB_TOKEN }}
+          ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true
         
   # generate-sbom:
   #   name: Generate SBOM
