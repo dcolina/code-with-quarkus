@@ -7,6 +7,10 @@ on:
         description: 'Release Version (yy.mm.dd[_lts_v##]])'
         required: true
 
+permissions:
+  contents: write
+  packages: write        
+
 env:
   JAVA_VERSION: 21
   JAVA_DISTRO: 'temurin'  
@@ -111,13 +115,11 @@ jobs:
 
       - name: Create Release
         env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ steps.set-release-version.outputs.release_version }}
-          # JRELEASER_ARTIFACTORY_USERNAME: ${{ secrets.EE_REPO_USERNAME }}
-          # JRELEASER_ARTIFACTORY_PASSWORD: ${{ secrets.EE_REPO_PASSWORD }}
           JRELEASER_DRY_RUN: 'true'      
         run: |
-          ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true
+          ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true -Djreleaser.github.token=${{ secrets.GITHUB_TOKEN }}
         
   # generate-sbom:
   #   name: Generate SBOM
