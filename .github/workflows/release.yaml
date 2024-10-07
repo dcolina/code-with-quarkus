@@ -16,9 +16,9 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Github Context
-        run: |
-          echo "GITHUB CONTEXT:"
-          echo ${{fromJson(github)}}
+        run: echo 'GitHub context'
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
 
       - uses: actions/checkout@v4
       - name: Set Common Vars
