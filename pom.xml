@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.acme</groupId>
     <artifactId>code-with-quarkus</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>24.09.25</version>
 
     <properties>
         <compiler-plugin.version>3.13.0</compiler-plugin.version>
@@ -15,6 +15,7 @@
         <quarkus.platform.version>3.15.1</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.3.1</surefire-plugin.version>
+        <version.jreleaser.maven.plugin>1.8.0</version.jreleaser.maven.plugin>
     </properties>
 
     <dependencyManagement>
@@ -120,5 +121,34 @@
                 <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
         </profile>
+        <profile>
+            <id>upload-sbom</id>
+            <activation>
+                <file>
+                    <exists>./jreleaser.yml</exists>
+                </file>
+            </activation>            
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jreleaser</groupId>
+                        <artifactId>jreleaser-maven-plugin</artifactId>
+                        <version>${version.jreleaser.maven.plugin}</version>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <configFile>./jreleaser.yml</configFile>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>upload</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>                  
     </profiles>
 </project>

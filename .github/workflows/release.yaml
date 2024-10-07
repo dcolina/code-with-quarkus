@@ -1,0 +1,160 @@
+name: Testing
+
+on:
+  workflow_dispatch:      
+    inputs:
+      release_version:
+        description: 'Release Version (yy.mm.dd[_lts_v##]])'
+        required: true
+
+env:
+  JAVA_VERSION: 21
+  JAVA_DISTRO: 'temurin'  
+
+jobs:
+  generate-sbom:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Github Context
+        run: |
+          echo "GITHUB CONTEXT:"
+          echo ${{fromJson(github)}}
+
+      - uses: actions/checkout@v4
+      - name: Set Common Vars
+        id: set-common-vars
+        run: |
+          git config user.name "${{ secrets.GITHUB_TOKEN }}"
+          git config user.email "dotCMS-Machine-User@dotcms.com"
+          release_version=${{ github.event.inputs.release_version }}
+          release_branch=release-${release_version}
+          release_tag=v${release_version}
+          release_commit=${{ github.event.inputs.release_commit }}
+          if [[ -z "${release_commit}" ]]; then
+            release_commit=$(git log -1 --pretty=%H)
+          fi
+          release_hash=${release_commit::7}
+          is_lts=false
+          [[ ${release_version} =~ ^[0-9]{2}.[0-9]{2}.[0-9]{2}_lts_v[0-9]{2}$ ]] && is_lts=true
+          echo "release_version=${release_version}" >> $GITHUB_OUTPUT
+          echo "release_branch=${release_branch}" >> $GITHUB_OUTPUT
+          echo "release_tag=${release_tag}" >> $GITHUB_OUTPUT
+          echo "release_commit=${release_commit}" >> $GITHUB_OUTPUT
+          echo "release_hash=${release_hash}" >> $GITHUB_OUTPUT
+          echo "is_lts=${is_lts}" >> $GITHUB_OUTPUT
+          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
+
+      - name: Set Release Version
+        id: set-release-version
+        run: |
+          release_tag=${{ steps.set-common-vars.outputs.release_tag }}
+          if git rev-parse "${release_tag}" >/dev/null 2>&1; then 
+            echo "Tag ${release_tag} exists, removing it"
+            git push origin :refs/tags/${release_tag}
+          fi
+          
+          git reset --hard ${{ steps.set-common-vars.outputs.release_commit }}
+          release_version=${{ steps.set-common-vars.outputs.release_version }}
+          release_branch=${{ steps.set-common-vars.outputs.release_branch }}
+          
+          remote=$(git ls-remote --heads https://github.com/dcolina/code-with-quarkus.git ${release_branch} | wc -l | tr -d '[:space:]')
+          if [[ "${remote}" == '1' ]]; then
+            echo "Release branch ${release_branch} already exists, removing it"
+            git push origin :${release_branch}
+          fi
+          git checkout -b ${release_branch}
+          
+          # set version in .mvn/maven.config
+          echo "-Dprod=true" > .mvn/maven.config
+          echo "-Drevision=${release_version}" >> .mvn/maven.config
+          echo "-Dchangelist=" >> .mvn/maven.config
+          
+          git add .mvn/maven.config
+          
+          git status
+          git commit -a -m "🏁 Publishing release version [${release_version}]"
+          git push origin ${release_branch}
+          
+          release_commit=$(git log -1 --pretty=%H)
+          echo "release_commit=${release_commit}" >> $GITHUB_OUTPUT
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRO }}
+
+      - name: Build Core
+        run: |
+          ./mvnw -ntp \
+            -DskipTests=true \
+            -DskipITs=true \
+            clean install \
+            --file pom.xml \
+            --show-version
+          rc=$?
+          if [[ $rc != 0 ]]; then
+            echo "Build failed with exit code $rc"
+            exit $rc
+          fi        
+
+      - name: Create Release
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/dcolina/code-with-quarkus/releases \
+            -d '{"tag_name": "${{ steps.set-common-vars.outputs.release_tag }}", "name": "Release ${{ steps.set-common-vars.outputs.release_version }}", "target_commitish": "${{ steps.set-release-version.outputs.release_commit }}", "draft": false, "prerelease": false, "generate_release_notes": false}'
+        if: success()
+
+
+      - name: Create Release
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_PROJECT_VERSION: ${{ steps.set-release-version.outputs.release_version }}
+          # JRELEASER_ARTIFACTORY_USERNAME: ${{ secrets.EE_REPO_USERNAME }}
+          # JRELEASER_ARTIFACTORY_PASSWORD: ${{ secrets.EE_REPO_PASSWORD }}
+          JRELEASER_DRY_RUN: 'true'      
+        run: |
+          ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true
+        
+  # generate-sbom:
+  #   name: Generate SBOM
+  #   runs-on: ubuntu-latest
+  #   needs: [  prepare-release, build-push-image ]
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - uses: ./.github/actions/legacy-release/sbom-generator
+  #       with:
+  #         dotcms_version: ${{ needs.prepare-release.outputs.release_version }}
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  #     - name: 'Download all build artifacts'
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: ${{ github.workspace }}/artifacts
+  #         pattern: sbom-${{ needs.prepare-release.outputs.release_version }}
+
+  #     - name: Restore Maven Repository
+  #       id: restore-maven
+  #       uses: actions/cache/restore@v4
+  #       with:
+  #         path: ~/.m2/repository
+  #         key: maven-core-${{ needs.prepare-release.outputs.date }}-${{ github.run_id }}          
+
+  #     - uses: ./.github/actions/core-cicd/maven-job
+  #       env:
+  #         JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         JRELEASER_PROJECT_VERSION: ${{ needs.prepare-release.outputs.release_version }}
+  #         JRELEASER_ARTIFACTORY_USERNAME: ${{ secrets.EE_REPO_USERNAME }}
+  #         JRELEASER_ARTIFACTORY_PASSWORD: ${{ secrets.EE_REPO_PASSWORD }}
+  #         JRELEASER_DRY_RUN: 'true'
+  #       with:
+  #         cleanup-runner: true
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         stage-name: "JReleaser"
+  #         maven-args: "-Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true -Ddocker.skip -pl :dotcms-parent"
+  #         version: ${{ needs.prepare-release.outputs.release_version }} 
+  #         # artifacts-from: ${{ env.ARTIFACT_RUN_ID }}        
