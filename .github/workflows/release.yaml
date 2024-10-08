@@ -112,14 +112,19 @@ jobs:
             -d '{"tag_name": "${{ steps.set-common-vars.outputs.release_tag }}", "name": "Release ${{ steps.set-common-vars.outputs.release_version }}", "target_commitish": "${{ steps.set-release-version.outputs.release_commit }}", "draft": false, "prerelease": false, "generate_release_notes": false}'
         if: success()
 
-
-      - name: Create Release
+      - name: Upload SBOM as a Release Asset
         env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JRELEASER_PROJECT_VERSION: ${{ steps.set-release-version.outputs.release_version }}
-          JRELEASER_DRY_RUN: 'true'      
+          GITHUB_TOKEN: ${{ github.TOKEN }}      
         run: |
-          ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true -Djreleaser.github.token=${JRELEASER_GITHUB_TOKEN}
+          gh release upload ${{ steps.set-common-vars.outputs.release_tag }} ./artifacts/sbom-dotcms-${{ steps.set-release-version.outputs.release_version }}.json    
+        
+      # - name: Upload SBOM as a Release Asset
+      #   env:
+      #     JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     JRELEASER_PROJECT_VERSION: ${{ steps.set-release-version.outputs.release_version }}
+      #     JRELEASER_DRY_RUN: 'true'      
+      #   run: |
+      #     ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true -Djreleaser.github.token=${JRELEASER_GITHUB_TOKEN}
         
   # generate-sbom:
   #   name: Generate SBOM
