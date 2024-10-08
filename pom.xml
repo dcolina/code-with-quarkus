@@ -121,7 +121,7 @@
                 <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
         </profile>
-        <profile>
+        <!-- <profile>
             <id>upload-sbom</id>
             <activation>
                 <file>
@@ -149,6 +149,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>                  
+        </profile>                   -->
     </profiles>
 </project>
