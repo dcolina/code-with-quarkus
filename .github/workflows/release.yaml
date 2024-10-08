@@ -107,14 +107,14 @@ jobs:
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Authorization: Bearer ${{ secrets.JRELEASER_GITHUB_TOKEN }}" \
             https://api.github.com/repos/dcolina/code-with-quarkus/releases \
             -d '{"tag_name": "${{ steps.set-common-vars.outputs.release_tag }}", "name": "Release ${{ steps.set-common-vars.outputs.release_version }}", "target_commitish": "${{ steps.set-release-version.outputs.release_commit }}", "draft": false, "prerelease": false, "generate_release_notes": false}'
         if: success()
 
       - name: Upload SBOM as a Release Asset
         env:
-          GITHUB_TOKEN: ${{ github.token }}      
+          GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}      
         run: |
           gh release upload ${{ steps.set-common-vars.outputs.release_tag }} ./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json    
         
