@@ -48,50 +48,25 @@ jobs:
           echo "is_lts=${is_lts}" >> $GITHUB_OUTPUT
           echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
 
-      - name: Set Release Version
-        id: set-release-version
-        run: |
-          release_tag=${{ steps.set-common-vars.outputs.release_tag }}
-          if git rev-parse "${release_tag}" >/dev/null 2>&1; then 
-            echo "Tag ${release_tag} exists, removing it"
-            git push origin :refs/tags/${release_tag}
-          fi
-          
-          git reset --hard ${{ steps.set-common-vars.outputs.release_commit }}
-          release_version=${{ steps.set-common-vars.outputs.release_version }}
-          release_branch=${{ steps.set-common-vars.outputs.release_branch }}
-          
-          remote=$(git ls-remote --heads https://github.com/dcolina/code-with-quarkus.git ${release_branch} | wc -l | tr -d '[:space:]')
-          if [[ "${remote}" == '1' ]]; then
-            echo "Release branch ${release_branch} already exists, removing it"
-            git push origin :${release_branch}
-          fi
-          git checkout -b ${release_branch}
-          
-          # set version in .mvn/maven.config
-          echo "-Dprod=true" > .mvn/maven.config
-          echo "-Drevision=${release_version}" >> .mvn/maven.config
-          echo "-Dchangelist=" >> .mvn/maven.config
-          
-          git add .mvn/maven.config
-          
-          git status
-          git commit -a -m "🏁 Publishing release version [${release_version}]"
-          git push origin ${release_branch}
-          
-          release_commit=$(git log -1 --pretty=%H)
-          echo "release_commit=${release_commit}" >> $GITHUB_OUTPUT          
-
       - name: Test GitHub CLI authentication
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           echo "Testing GitHub CLI authentication..."
-          gh auth status
+          gh auth status    
 
-      - name: List Releases (Read Test)
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Crear Tag y Push
         run: |
-          echo "Listing releases..."
-          gh release list
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git tag ${{ steps.set-common-vars.outputs.release_tag }}
+          git push origin ${{ steps.set-common-vars.outputs.release_tag }}
+
+      - name: Crear Release en GitHub usando gh
+        run: |
+          gh release create "${{ steps.set-common-vars.outputs.release_tag }}" \
+            --title "${{ steps.set-common-vars.outputs.release_version }}" 
+
+      - name: Subir Artefacto al Release usando gh
+        run: |
+          gh release upload "${{ steps.set-common-vars.outputs.release_tag }}" "./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json"    
