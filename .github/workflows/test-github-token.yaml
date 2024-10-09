@@ -100,7 +100,6 @@ jobs:
       - name: Upload SBOM as a Release Asset
         env:
           JRELEASER_GITHUB_TOKEN: ${{ github.token }}
-          JRELEASER_PROJECT_VERSION: ${{ steps.set-common-vars.outputs.release_version }}
-          JRELEASER_DRY_RUN: 'true'      
+          JRELEASER_PROJECT_VERSION: ${{ steps.set-common-vars.outputs.release_version }}      
         run: |
           ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true    
