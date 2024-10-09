@@ -60,12 +60,8 @@ jobs:
   
       - name: Build Core
         run: |
-          ./mvnw -ntp \
-            -DskipTests=true \
-            -DskipITs=true \
-            clean install \
-            --file pom.xml \
-            --show-version
+          ./mvnw clean install -DskipTests=true
+             
           rc=$?
           if [[ $rc != 0 ]]; then
             echo "Build failed with exit code $rc"
