@@ -59,8 +59,6 @@ jobs:
           distribution: ${{ env.JAVA_DISTRO }}
   
       - name: Build Core
-        env:
-          JRELEASER_GITHUB_TOKEN: ${{ github.token }}      
         run: |
           ./mvnw package -Dquarkus.package.jar.type=uber-jar -DskipTests=true
              
@@ -91,15 +89,16 @@ jobs:
           gh release create "${{ steps.set-common-vars.outputs.release_tag }}" \
             --title "${{ steps.set-common-vars.outputs.release_version }}" 
 
-      # - name: Subir Artefacto al Release usando gh
-      #   env:
-      #     GITHUB_TOKEN: ${{ github.token }}  
-      #   run: |
-      #     gh release upload "${{ steps.set-common-vars.outputs.release_tag }}" "./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json"    
-
-      - name: Upload SBOM as a Release Asset
+      - name: Subir Artefacto al Release usando gh
         env:
-          JRELEASER_GITHUB_TOKEN: ${{ github.token }}
-          JRELEASER_PROJECT_VERSION: ${{ steps.set-common-vars.outputs.release_version }}      
+          GITHUB_TOKEN: ${{ github.token }}  
         run: |
-          ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true    
+          zip .artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json.zip .artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json
+          gh release upload "${{ steps.set-common-vars.outputs.release_tag }}" "./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json"    
+
+      # - name: Upload SBOM as a Release Asset
+      #   env:
+      #     JRELEASER_GITHUB_TOKEN: ${{ github.token }}
+      #     JRELEASER_PROJECT_VERSION: ${{ steps.set-common-vars.outputs.release_version }}      
+      #   run: |
+      #     ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true    
