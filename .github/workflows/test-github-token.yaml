@@ -59,8 +59,10 @@ jobs:
           distribution: ${{ env.JAVA_DISTRO }}
   
       - name: Build Core
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ github.token }}      
         run: |
-          ./mvnw clean install -DskipTests=true
+          ./mvnw package -Dquarkus.package.jar.type=uber-jar -DskipTests=true
              
           rc=$?
           if [[ $rc != 0 ]]; then
