@@ -114,14 +114,14 @@ jobs:
 
       - name: Crear Release en GitHub usando gh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
         run: |
           gh release create "${{ steps.set-common-vars.outputs.release_tag }}" \
             --title "Release ${{ steps.set-common-vars.outputs.release_version }}"
 
       - name: Subir Artefacto al Release usando gh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
         run: |
           gh release upload "${{ steps.set-common-vars.outputs.release_tag }}" "./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json"
 
