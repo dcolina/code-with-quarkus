@@ -93,7 +93,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}  
         run: |
-          zip .artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json.zip .artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json
+          zip ./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json.zip ./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json
           gh release upload "${{ steps.set-common-vars.outputs.release_tag }}" "./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json"    
 
       # - name: Upload SBOM as a Release Asset
