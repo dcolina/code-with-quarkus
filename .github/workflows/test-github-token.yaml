@@ -10,6 +10,10 @@ on:
 permissions:
   contents: write  # This gives write permission to repository contents
 
+env:
+  JAVA_VERSION: 21
+  JAVA_DISTRO: 'temurin'  
+
 jobs:
   test-github-token:
     runs-on: ubuntu-latest
@@ -48,6 +52,26 @@ jobs:
           echo "is_lts=${is_lts}" >> $GITHUB_OUTPUT
           echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRO }}
+  
+      - name: Build Core
+        run: |
+          ./mvnw -ntp \
+            -DskipTests=true \
+            -DskipITs=true \
+            clean install \
+            --file pom.xml \
+            --show-version
+          rc=$?
+          if [[ $rc != 0 ]]; then
+            echo "Build failed with exit code $rc"
+            exit $rc
+          fi                
+
       - name: Test GitHub CLI authentication
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -69,8 +93,16 @@ jobs:
           gh release create "${{ steps.set-common-vars.outputs.release_tag }}" \
             --title "${{ steps.set-common-vars.outputs.release_version }}" 
 
-      - name: Subir Artefacto al Release usando gh
+      # - name: Subir Artefacto al Release usando gh
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}  
+      #   run: |
+      #     gh release upload "${{ steps.set-common-vars.outputs.release_tag }}" "./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json"    
+
+      - name: Upload SBOM as a Release Asset
         env:
-          GITHUB_TOKEN: ${{ github.token }}  
+          JRELEASER_GITHUB_TOKEN: ${{ github.token }}
+          JRELEASER_PROJECT_VERSION: ${{ steps.set-common-vars.outputs.release_version }}
+          JRELEASER_DRY_RUN: 'true'      
         run: |
-          gh release upload "${{ steps.set-common-vars.outputs.release_tag }}" "./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json"    
+          ./mvnw -Pupload-sbom validate -DartifactsDir=./artifacts -DskipTests=true    
