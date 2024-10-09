@@ -7,9 +7,9 @@ on:
         description: 'Release Version (yy.mm.dd[_lts_v##]])'
         required: true
 
-permissions:
-  contents: write
-  packages: write        
+# permissions:
+#   contents: write
+#   packages: write        
 
 env:
   JAVA_VERSION: 21
