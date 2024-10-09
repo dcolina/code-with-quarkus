@@ -17,7 +17,7 @@ env:
 
 jobs:
   generate-sbom:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Github Context
         run: echo 'GitHub context'
@@ -102,15 +102,11 @@ jobs:
             exit $rc
           fi        
 
-      # - name: Autenticarse con GitHub CLI
-      #   run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-
-      # - name: Crear Tag y Push
-      #   run: |
-      #     git config user.name "${{ github.actor }}"
-      #     git config user.email "${{ github.actor }}@users.noreply.github.com"
-      #     git tag ${{ steps.set-common-vars.outputs.release_tag }}
-      #     git push origin ${{ steps.set-common-vars.outputs.release_tag }}
+      - name: Verificar versión de gh
+        run: gh --version
+  
+      - name: Verificar autenticación de gh
+        run: gh auth status
 
       - name: Crear Release en GitHub usando gh
         env:
