@@ -1,0 +1,36 @@
+name: Test GitHub Token
+
+on:
+  workflow_dispatch:  # This allows manual triggering
+
+permissions:
+  contents: write  # This gives write permission to repository contents
+
+jobs:
+  test-github-token:
+    runs-on: ubuntu-latest
+    steps:       
+      - name: Github Context
+        env:
+          CONTEXT: ${{ toJson(github) }}      
+        run: |
+          echo '::group::GitHub context'
+          echo $CONTEXT
+          echo '::endgroup::'
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test GitHub CLI authentication
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          echo "Testing GitHub CLI authentication..."
+          gh auth status
+
+      - name: List Releases (Read Test)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          echo "Listing releases..."
+          gh release list
