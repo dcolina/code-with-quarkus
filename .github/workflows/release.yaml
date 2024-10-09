@@ -105,12 +105,12 @@ jobs:
       # - name: Autenticarse con GitHub CLI
       #   run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-      - name: Crear Tag y Push
-        run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          git tag ${{ steps.set-common-vars.outputs.release_tag }}
-          git push origin ${{ steps.set-common-vars.outputs.release_tag }}
+      # - name: Crear Tag y Push
+      #   run: |
+      #     git config user.name "${{ github.actor }}"
+      #     git config user.email "${{ github.actor }}@users.noreply.github.com"
+      #     git tag ${{ steps.set-common-vars.outputs.release_tag }}
+      #     git push origin ${{ steps.set-common-vars.outputs.release_tag }}
 
       - name: Crear Release en GitHub usando gh
         env:
