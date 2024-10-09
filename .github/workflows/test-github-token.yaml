@@ -2,6 +2,10 @@ name: Test GitHub Token
 
 on:
   workflow_dispatch:  # This allows manual triggering
+    inputs:
+      release_version:
+        description: 'Release Version (yy.mm.dd[_lts_v##]])'
+        required: true
 
 permissions:
   contents: write  # This gives write permission to repository contents
@@ -20,6 +24,30 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set Common Vars
+        id: set-common-vars
+        run: |
+          git config user.name "${{ secrets.GITHUB_TOKEN }}"
+          git config user.email "dotCMS-Machine-User@dotcms.com"
+          release_version=${{ github.event.inputs.release_version }}
+          release_branch=release-${release_version}
+          release_tag=v${release_version}
+          release_commit=${{ github.event.inputs.release_commit }}
+          if [[ -z "${release_commit}" ]]; then
+            release_commit=$(git log -1 --pretty=%H)
+          fi
+          release_hash=${release_commit::7}
+          is_lts=false
+          [[ ${release_version} =~ ^[0-9]{2}.[0-9]{2}.[0-9]{2}_lts_v[0-9]{2}$ ]] && is_lts=true
+          echo "release_version=${release_version}" >> $GITHUB_OUTPUT
+          echo "release_branch=${release_branch}" >> $GITHUB_OUTPUT
+          echo "release_tag=${release_tag}" >> $GITHUB_OUTPUT
+          echo "release_commit=${release_commit}" >> $GITHUB_OUTPUT
+          echo "release_hash=${release_hash}" >> $GITHUB_OUTPUT
+          echo "is_lts=${is_lts}" >> $GITHUB_OUTPUT
+          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
+
 
       - name: Test GitHub CLI authentication
         env:
