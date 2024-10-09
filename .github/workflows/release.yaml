@@ -7,9 +7,9 @@ on:
         description: 'Release Version (yy.mm.dd[_lts_v##]])'
         required: true
 
-# permissions:
-#   contents: write
-#   packages: write        
+permissions:
+  contents: write
+  packages: write        
 
 env:
   JAVA_VERSION: 21
@@ -102,23 +102,19 @@ jobs:
             exit $rc
           fi        
 
-      - name: Verificar versión de gh
-        run: gh --version
-  
-      - name: Verificar autenticación de gh
-        run: gh auth status
-
       - name: Crear Release en GitHub usando gh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
         run: |
+          echo "$GITHUB_TOKEN" | gh auth login --with-token
           gh release create "${{ steps.set-common-vars.outputs.release_tag }}" \
             --title "Release ${{ steps.set-common-vars.outputs.release_version }}"
 
       - name: Subir Artefacto al Release usando gh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
         run: |
+          echo "$GITHUB_TOKEN" | gh auth login --with-token
           gh release upload "${{ steps.set-common-vars.outputs.release_tag }}" "./artifacts/sbom-dotcms-${{ steps.set-common-vars.outputs.release_version }}.json"
 
       # - name: Create Release
